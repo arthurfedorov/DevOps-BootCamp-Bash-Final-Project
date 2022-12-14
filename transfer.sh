@@ -36,10 +36,10 @@ done
 function singleUpload() {
   local filepath=$1
   local url
-#  local transfer_path=$2
+  local transfer_path=$2
 
   # upload the file using curl
-  url=$(curl --progress-bar --upload-file "$filepath" "https://transfer.sh/$filepath")
+  url=$(curl --progress-bar --upload-file "$filepath" "https://transfer.sh/$transfer_path")
 
   # return the URL of the uploaded file
   echo "$url"
@@ -66,7 +66,7 @@ function singleDownload() {
   local dest=$2
 
   # download the file using curl
-  curl -L -# "$url" -o "$dest/$(basename "$url")"
+  curl -# "$url" -o "$dest/$(basename "$url")"
 }
 
 # function for printing the response from downloading a file
