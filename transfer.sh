@@ -1,6 +1,6 @@
 #!/bin/bash
 
-currentVersion="0.0.1"
+currentVersion="1.23.0"
 
 # Check for the -h flag and output the help message if it is present
 while getopts "hvd" flag; do
