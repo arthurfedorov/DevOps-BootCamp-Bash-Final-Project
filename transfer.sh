@@ -1,21 +1,28 @@
 #!/bin/bash
 
+# Current script version
 currentVersion="1.23.0"
 
-# Check for the -h flag and output the help message if it is present
-while getopts "hvd" flag; do
+# Function that print help information about the script
+Help() {
+  echo "Description: Bash tool to transfer files from the command line."
+  echo "Usage: "
+  echo "-d Download single file from the transfer.sh to the specified directory"
+  echo "-h  Show the help"
+  echo "-v  Get the tool version"
+  echo "Examples: "
+  echo "  ./transfer.sh test.txt test2.txt -- Upload files"
+  echo "  ./transfer.sh -d ./test Mij6ca test.txt -- Download file"
+}
+
+# Set a flag when processing the arguments to use upload function by default
+direction=up
+
+# Using while loop to work with flags
+while getopts ":d:hv" flag; do
   case "${flag}" in
     h)
-      cat <<EOF
-Description: Bash tool to transfer files from the command line.
-Usage:
-  -d  Download single file from the transfer.sh to the specified directory
-  -h  Show the help
-  -v  Get the tool version
-Examples:
-  ./transfer.sh test.txt test2.txt  Upload files test.txt test2.txt
-  ./transfer.sh -d ./test Mij6ca test.txt
-EOF
+      Help
       exit 0
       ;;
     v)
@@ -23,20 +30,21 @@ EOF
       exit 0
       ;;
     d)
+      # if run with flag -d, download function will run
+      direction=down
       ;;
-    *) echo "./transfer: try './transfer -h' more information"
+    *) echo "Invalid option"
+       echo "try transfer -h' more information"
        exit 1
        ;;
   esac
 done
 
-# function for uploading a file to transfer.sh
-# filepath: the path to the file to be uploaded
-# returns the URL of the uploaded file
-function singleUpload() {
+# Function for uploading a file to transfer
+singleUpload() {
   local filepath=$1
-  local url
   local transfer_path=$2
+  local url
 
   # upload the file using curl
   url=$(curl --progress-bar --upload-file "$filepath" "https://transfer.sh/$transfer_path")
@@ -45,9 +53,9 @@ function singleUpload() {
   echo "$url"
 }
 
-# function for printing the response from uploading a file
-# filepath: the path to the file that was uploaded
-function printUploadResponse() {
+# Function for printing the response from uploading a file filepath: the path
+# to the file that was uploaded
+printUploadResponse() {
   local filepath=$1
   local url
 
@@ -61,35 +69,33 @@ function printUploadResponse() {
   echo "Transfer File URL: $url"
 }
 
-function singleDownload() {
-  local url=$1
-  local dest=$2
+# Function for downloading file from transfer.sh
+singleDownload() {
+  local destination=$1
+  local url=$2
+  local file_name=$3
 
-  # download the file using curl
-  curl -# "$url" -o "$dest/$(basename "$url")"
+  curl -# "https://transfer.sh/$url/$file_name" -o "$destination/$file_name"
+
+  return $?
 }
 
-# function for printing the response from downloading a file
-# url: the URL of the file to download
-function printDownloadResponse() {
-  local url=$1
-
-  # print a message indicating that the file is being downloaded
-  echo "Downloading $(basename "$url")"
-
-  # download the file
-  singleDownload "$url" "$dest"
-
-  # print a success message
-  echo "Success!"
+# Function for printing the response from downloading a file url: the URL
+# of the file to download
+printDownloadResponse() {
+  local exit_code=$?
+  if [ "$exit_code" -eq 0 ]; then
+    echo "Success!"
+  else
+    echo "Error: There was a problem downloading the file."
+  fi
 }
 
-# main function
+# Main function to run script
 function main() {
-  # check if at least one file was specified
-  if [ $# -eq 0 ]; then
+  # Check if at least one file was specified
+  if [ "$#" -eq 0 ]; then
     echo "Error: no files specified"
-    exit 1
   fi
 
   # upload each file and print the response
@@ -98,5 +104,11 @@ function main() {
   done
 }
 
-# call the main function
-main "$@"
+# This condition allows to run singleDownload() or main() which run a
+# singleUpload() functions
+if [[ $direction == up ]]; then
+  main "$@"
+else
+  singleDownload "$2" "$3" "$4"
+  printDownloadResponse
+fi
